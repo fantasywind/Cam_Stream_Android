@@ -33,6 +33,7 @@ public class VideoViewActivity extends Activity  implements Callback
 	private Camera mCamera;
 	private boolean Login = false;
 	private String Text;
+	private final static String TAG = "VideoView";
 	
 	@SuppressWarnings("deprecation")
 	@Override
@@ -41,8 +42,10 @@ public class VideoViewActivity extends Activity  implements Callback
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_video_view);
         
+		Log.i(TAG, "onCreate.");
+		
 		String path = Environment.getExternalStorageDirectory().getAbsolutePath().toString()+"/testAndroid";
-		File file=new File(path);
+		File file = new File(path);
         
         if(!file.exists())
         {
@@ -62,6 +65,7 @@ public class VideoViewActivity extends Activity  implements Callback
 	public boolean onCreateOptionsMenu(Menu menu) 
 	{
 		// Inflate the menu; this adds items to the action bar if it is present.
+		Log.i(TAG, "Create Menu.");
 		getMenuInflater().inflate(R.menu.activity_video_view, menu);
 		menu.add(0, 0, 0, "Start");
 		menu.add(0, 1, 0, "Regist");

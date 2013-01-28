@@ -1,0 +1,23 @@
+<resources>
+
+    <string name="title_activity_login">登入系統</string>
+
+    <!-- Strings related to login -->
+    <string name="check_server">檢查伺服器狀態中...</string>
+    <string name="server_unavailable">目前沒有可用的認證碼!</string>
+    <string name="server_available">伺服器上線中!</string>
+    <string name="passcode">驗證碼</string>
+    <string name="device_name">裝置名稱</string>
+    <string name="action_login">取得憑證</string>
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in_register"><b>Sign in</b> or register</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="menu_forgot_password">Recover lost password</string>
+    <string name="login_progress_signing_in">Signing in&#8230;</string>
+    <string name="error_invalid_email">This email address is invalid</string>
+    <string name="error_invalid_password">驗證碼應為六位數字</string>
+    <string name="error_incorrect_password">驗證碼錯誤</string>
+    <string name="error_field_required">本欄位不得為空</string>
+
+</resources>

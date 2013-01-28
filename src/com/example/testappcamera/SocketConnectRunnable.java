@@ -69,8 +69,6 @@ public class SocketConnectRunnable implements Runnable
     	
     }
 	
-	
-	
 	private void register()
 	{
 		Log.d("SOCKET", "Create Connection.");
@@ -80,14 +78,18 @@ public class SocketConnectRunnable implements Runnable
 				DataInputStream inStream = new DataInputStream(client.getInputStream());
 				DataOutputStream outStream = new DataOutputStream(client.getOutputStream());
 				outStream.writeBytes("47c75e34529ab36ae8104a5cd0a7e056");
-	        	String input = inputStreamAsString(inStream);
-				//String meg = inStream.readUTF();
-				Log.d("SOCKET", input);
-				Log.d("SOCKET", "Sent.");
-	            //Port = Integer.valueOf(meg);
-	            //meg = inStream.readUTF();
-	            //AuthReq = meg;
-	            //Log.d("SOCKET", meg);
+	        	String port = inputStreamAsString(inStream).replaceAll("(\n|\r\n)", "");
+				Log.i("SOCKET", port);
+	            if (port.equals("denied")) {
+	            	Log.e("SOCKET", "Denied Token");
+	            } else {
+	            	try {
+	            		Port = Integer.parseInt(port);
+	            	} catch (NumberFormatException nfe){
+	            		Log.e("SOCKET", nfe.getMessage());
+	            	}
+	            	Log.i("SOCKET", "Sender Port: " + Port);
+	            }
 	            client.close();
 				
 	            
@@ -128,10 +130,8 @@ public class SocketConnectRunnable implements Runnable
         String line = null;
         
         while ((line = br.readLine()) != null) {
-        	Log.d("SOCKET", "Line!");
-            sb.append(line + "\n");
+        	sb.append(line + "\n");
         }
-
         br.close();
         return sb.toString();
     }
