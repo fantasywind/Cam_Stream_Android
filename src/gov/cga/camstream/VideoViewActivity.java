@@ -1,4 +1,4 @@
-package com.example.testappcamera;
+package gov.cga.camstream;
 
 import java.io.File;
 import java.io.FileInputStream;

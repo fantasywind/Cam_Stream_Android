@@ -1,4 +1,4 @@
-package com.example.testappcamera;
+package gov.cga.camstream;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;

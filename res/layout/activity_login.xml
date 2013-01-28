@@ -32,41 +32,36 @@
     <!-- Login form -->
 
     <ScrollView
-        android:id="@+id/server_status"
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
 
-        <LinearLayout
+        <TableLayout
             style="@style/LoginFormContainer"
+            android:id="@+id/login_form"
+        	android:stretchColumns="1"
             android:orientation="vertical" >
-		
+			<TableRow>
             <TextView
                 android:id="@+id/login_status_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/check_server"
                 android:textAppearance="?android:attr/textAppearanceLarge" />
-		</LinearLayout>
-	</ScrollView>
+		    </TableRow>
+		    <TableRow>
 
-	<ScrollView
-	    android:id="@+id/login_form"
-	    android:layout_width="match_parent"
-	    android:layout_height="match_parent"
-	    android:layout_marginTop="50dp"
-	    android:visibility="invisible" >
+		    <EditText
+		        android:id="@+id/passcode_input"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:hint="@string/passcode"
+		        android:inputType="number"
+		        android:maxLines="1"
+		        android:singleLine="true"
+		        android:visibility="invisible" />
 
-		<LinearLayout
-            style="@style/LoginFormContainer"
-            android:orientation="vertical" >
-            <EditText
-                android:id="@+id/passcode_input"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/passcode"
-                android:inputType="number"
-                android:maxLines="1"
-                android:singleLine="true" />
+			</TableRow>
+			<TableRow>
 
             <EditText
                 android:id="@+id/device_name_input"
@@ -78,7 +73,11 @@
                 android:imeOptions="actionUnspecified"
                 android:inputType="text"
                 android:maxLines="1"
-                android:singleLine="true" />
+                android:singleLine="true"
+                android:visibility="invisible" />
+
+            </TableRow>
+			<TableRow>
 
             <Button
                 android:id="@+id/sign_in_button"
@@ -88,9 +87,11 @@
                 android:layout_marginTop="16dp"
                 android:paddingLeft="32dp"
                 android:paddingRight="32dp"
-                android:text="@string/action_login" />
+                android:text="@string/action_refresh"
+                android:visibility="visible" />
 
-        </LinearLayout>
+			</TableRow>
+        </TableLayout>
     </ScrollView>
 
 </merge>

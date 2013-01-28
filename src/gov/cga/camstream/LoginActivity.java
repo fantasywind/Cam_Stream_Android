@@ -1,4 +1,4 @@
-package com.example.testappcamera;
+package gov.cga.camstream;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -12,6 +12,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.util.Log;
@@ -69,6 +70,7 @@ public class LoginActivity extends Activity {
 	private View mLoginFormView;
 	private View mLoginStatusView;
 	private TextView mLoginStatusMessageView;
+	private Button mSubmitBtn;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +78,9 @@ public class LoginActivity extends Activity {
 
 		setContentView(R.layout.activity_login);
 
+		// Check Auth Service
+		Boolean auth_service = this.auth_service();
+				
 		// Set up the login form.
 		//mPasscode = getIntent();
 		mPasscodeView = (EditText) findViewById(R.id.passcode_input);
@@ -99,13 +104,81 @@ public class LoginActivity extends Activity {
 		mLoginStatusView = findViewById(R.id.login_status);
 		mLoginStatusMessageView = (TextView) findViewById(R.id.login_status_message);
 
-		findViewById(R.id.sign_in_button).setOnClickListener(
+		mSubmitBtn = (Button) findViewById(R.id.sign_in_button);
+		mSubmitBtn.setOnClickListener(
 				new View.OnClickListener() {
 					@Override
 					public void onClick(View view) {
-						attemptLogin();
+						if (mSubmitBtn.getText().equals("取得憑證")) {
+							attemptLogin();
+						} else {
+							Boolean auth_service = auth_service();
+							//auth_service = true;
+							if (auth_service) {
+								mPasscodeView.setVisibility(1);
+								mDeviceView.setVisibility(1);
+								mSubmitBtn.setText(R.string.action_login);
+							}
+						}
 					}
 				});
+		if (auth_service) {
+			mPasscodeView.setVisibility(1);
+			mDeviceView.setVisibility(1);
+			mSubmitBtn.setText(R.string.action_login);
+		}
+	}
+	
+	private boolean auth_service () {
+		Log.i("Login", "Do Login Event.");
+		
+		HttpClient httpClient = new DefaultHttpClient();
+		HttpGet httpGet = new HttpGet("http://127.0.0.1/auth");
+		HttpResponse response;
+		Boolean serviceStatus = false;
+		
+		try {
+			response = httpClient.execute(httpGet);
+			
+			HttpEntity entity = response.getEntity();
+			String contentType = response.getHeaders("Content-Type")[0].getValue().toString();
+			String typePattern = "application/json.*";
+			
+			if (entity != null && contentType.matches(typePattern)) {
+				
+				InputStream inStream = entity.getContent();
+				String result = convert_stream_to_string(inStream);
+								
+				JSONObject json = new JSONObject(result);
+				Log.i(TAG, "JSON: " + json.toString());
+				
+				JSONArray nameArray = json.names();
+				JSONArray valueArray = json.toJSONArray(nameArray);
+								
+				for (int i = 0; i < valueArray.length(); i++) {
+					if (nameArray.getString(i) == "status");
+						serviceStatus = true;
+						//serviceStatus = valueArray.getString(i);
+					//Log.i(TAG, "<jsonname" + i + ">\n" + nameArray.getString(i) + "\n</jsonname" + i + ">\n" + "<jsonvalue" + i + ">\n" + valueArray.getString(i) + "\n</jsonvalue" + i + ">");
+				}
+				inStream.close();
+			} else {
+				Log.i(TAG, "Failed on connecting server.");
+			}
+			// Simulate network access.
+			Thread.sleep(2000);
+		} catch (RuntimeException ex) {
+			Log.e("Connection", ex.getMessage());
+		} catch (InterruptedException ex) {
+			Log.e("Connection", ex.getMessage());
+		} catch (IOException ex) {
+			Log.e("Connection", ex.getMessage());
+		} catch (JSONException ex) {
+			// TODO Auto-generated catch block
+			ex.printStackTrace();
+			Log.e("Connection", ex.getMessage());
+		}
+		return serviceStatus;
 	}
 
 	@Override
@@ -242,7 +315,7 @@ public class LoginActivity extends Activity {
 			Log.i("Login", "Do Login Event.");
 			
 			HttpClient httpClient = new DefaultHttpClient();
-			HttpGet httpGet = new HttpGet("http://0.0.0.0/auth");
+			HttpGet httpGet = new HttpGet("http://127.0.0.1/auth");
 			HttpResponse response;
 			String serviceStatus = "";
 			
