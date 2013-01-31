@@ -2,8 +2,12 @@ package gov.cga.camstream;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -15,20 +19,30 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.HeaderGroup;
 import org.json.JSONArray;
@@ -39,6 +53,7 @@ import org.json.JSONObject;
  * Activity which displays a login screen to the user, offering registration as
  * well.
  */
+@SuppressLint({ "ShowToast", "CommitPrefEdits" })
 public class LoginActivity extends Activity {
 	/**
 	 * A dummy authentication store containing known user names and passwords.
@@ -70,17 +85,34 @@ public class LoginActivity extends Activity {
 	private View mLoginFormView;
 	private View mLoginStatusView;
 	private TextView mLoginStatusMessageView;
+	private TextView mServiceCheckStatus;
 	private Button mSubmitBtn;
+	
+	private Activity mActivity;
+	
+	// Token File
+	SharedPreferences mPrefs;	
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		// 取得 token 自偏好設定
+		Context mContext = this.getApplicationContext();
+		mPrefs = mContext.getSharedPreferences("auth", 0);
+		
+		mActivity = this;
+		
+		String token = mPrefs.getString("token", "");
+		
+		Log.i(TAG, "Preference [token]: " + token);
+		if (!token.equals("")) {
+			Intent intent = new Intent(this, VideoViewActivity.class);
+			startActivityForResult(intent, 2);
+		}
+		
 		setContentView(R.layout.activity_login);
-
-		// Check Auth Service
-		Boolean auth_service = this.auth_service();
-				
+		
 		// Set up the login form.
 		//mPasscode = getIntent();
 		mPasscodeView = (EditText) findViewById(R.id.passcode_input);
@@ -104,36 +136,31 @@ public class LoginActivity extends Activity {
 		mLoginStatusView = findViewById(R.id.login_status);
 		mLoginStatusMessageView = (TextView) findViewById(R.id.login_status_message);
 
+		mServiceCheckStatus = (TextView) findViewById(R.id.login_status_text);
+		
 		mSubmitBtn = (Button) findViewById(R.id.sign_in_button);
 		mSubmitBtn.setOnClickListener(
-				new View.OnClickListener() {
-					@Override
-					public void onClick(View view) {
-						if (mSubmitBtn.getText().equals("取得憑證")) {
-							attemptLogin();
-						} else {
-							Boolean auth_service = auth_service();
-							//auth_service = true;
-							if (auth_service) {
-								mPasscodeView.setVisibility(1);
-								mDeviceView.setVisibility(1);
-								mSubmitBtn.setText(R.string.action_login);
-							}
-						}
+			new View.OnClickListener() {
+				@Override
+				public void onClick(View view) {
+					if (mSubmitBtn.getText().equals("取得憑證")) {
+						attemptLogin();
+					} else {
+						auth_service();
 					}
-				});
-		if (auth_service) {
-			mPasscodeView.setVisibility(1);
-			mDeviceView.setVisibility(1);
-			mSubmitBtn.setText(R.string.action_login);
-		}
+				}
+			}
+		);
+
+		// Check Auth Service
+		this.auth_service();
 	}
 	
 	private boolean auth_service () {
 		Log.i("Login", "Do Login Event.");
 		
 		HttpClient httpClient = new DefaultHttpClient();
-		HttpGet httpGet = new HttpGet("http://127.0.0.1/auth");
+		HttpGet httpGet = new HttpGet("http://10.0.2.2/auth/check");
 		HttpResponse response;
 		Boolean serviceStatus = false;
 		
@@ -148,35 +175,33 @@ public class LoginActivity extends Activity {
 				
 				InputStream inStream = entity.getContent();
 				String result = convert_stream_to_string(inStream);
+				
+				//Log.i(TAG, "ReSuLt: " + result);
 								
 				JSONObject json = new JSONObject(result);
-				Log.i(TAG, "JSON: " + json.toString());
-				
-				JSONArray nameArray = json.names();
-				JSONArray valueArray = json.toJSONArray(nameArray);
 								
-				for (int i = 0; i < valueArray.length(); i++) {
-					if (nameArray.getString(i) == "status");
-						serviceStatus = true;
-						//serviceStatus = valueArray.getString(i);
-					//Log.i(TAG, "<jsonname" + i + ">\n" + nameArray.getString(i) + "\n</jsonname" + i + ">\n" + "<jsonvalue" + i + ">\n" + valueArray.getString(i) + "\n</jsonvalue" + i + ">");
+				if (!json.getString("status").equals("unavailable")){
+					serviceStatus = true;
 				}
 				inStream.close();
 			} else {
 				Log.i(TAG, "Failed on connecting server.");
 			}
-			// Simulate network access.
-			Thread.sleep(2000);
 		} catch (RuntimeException ex) {
-			Log.e("Connection", ex.getMessage());
-		} catch (InterruptedException ex) {
 			Log.e("Connection", ex.getMessage());
 		} catch (IOException ex) {
 			Log.e("Connection", ex.getMessage());
 		} catch (JSONException ex) {
-			// TODO Auto-generated catch block
 			ex.printStackTrace();
-			Log.e("Connection", ex.getMessage());
+		}
+		if (serviceStatus) {
+			Log.v(TAG, "Service Available");
+			mPasscodeView.setVisibility(1);
+			mDeviceView.setVisibility(1);
+			mServiceCheckStatus.setText(R.string.server_available);
+			mSubmitBtn.setText(R.string.action_login);
+		} else {
+			mServiceCheckStatus.setText(R.string.server_unavailable);
 		}
 		return serviceStatus;
 	}
@@ -305,22 +330,21 @@ public class LoginActivity extends Activity {
 	}
 	
 	/**
+	 * 登入系統取得認證碼
 	 * Represents an asynchronous login/registration task used to authenticate
 	 * the user.
 	 */
 	public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
 		@Override
 		protected Boolean doInBackground(Void... param) {
-			// TODO: attempt authentication against a network service.
 			Log.i("Login", "Do Login Event.");
-			
+						
 			HttpClient httpClient = new DefaultHttpClient();
-			HttpGet httpGet = new HttpGet("http://127.0.0.1/auth");
+			HttpPost httpPost = new HttpPost("http://10.0.2.2/auth/" + mPasscode + "/" + mDevice);
 			HttpResponse response;
-			String serviceStatus = "";
-			
+						
 			try {
-				response = httpClient.execute(httpGet);
+				response = httpClient.execute(httpPost);
 				
 				HttpEntity entity = response.getEntity();
 				String contentType = response.getHeaders("Content-Type")[0].getValue().toString();
@@ -332,45 +356,35 @@ public class LoginActivity extends Activity {
 					String result = convert_stream_to_string(inStream);
 									
 					JSONObject json = new JSONObject(result);
-					Log.i(TAG, "JSON: " + json.toString());
 					
-					JSONArray nameArray = json.names();
-					JSONArray valueArray = json.toJSONArray(nameArray);
-									
-					for (int i = 0; i < valueArray.length(); i++) {
-						if (nameArray.getString(i) == "status");
-							serviceStatus = valueArray.getString(i);
-						//Log.i(TAG, "<jsonname" + i + ">\n" + nameArray.getString(i) + "\n</jsonname" + i + ">\n" + "<jsonvalue" + i + ">\n" + valueArray.getString(i) + "\n</jsonvalue" + i + ">");
-					}
 					inStream.close();
+					
+					if (json.getString("status").equals("Uncatched Pass")) {
+						Log.d(TAG, "Passcode rejected.");
+						return false;
+					} else if (json.getString("status").equals("Success")){
+						Log.d(TAG, "Passcode accepted.");
+						String token = json.getString("token");
+						
+						// 儲存於偏好設定
+						SharedPreferences.Editor edit = mPrefs.edit();
+						edit.putString("token", token);
+						edit.commit();
+						
+						return true;
+					}
 				} else {
 					Log.i(TAG, "Failed on connecting server.");
 				}
-				// Simulate network access.
-				Thread.sleep(2000);
 			} catch (RuntimeException ex) {
-				Log.e("Connection", ex.getMessage());
-			} catch (InterruptedException ex) {
 				Log.e("Connection", ex.getMessage());
 			} catch (IOException ex) {
 				Log.e("Connection", ex.getMessage());
 			} catch (JSONException ex) {
-				// TODO Auto-generated catch block
 				ex.printStackTrace();
 				Log.e("Connection", ex.getMessage());
 			}
-			// ------- Auth
-			Log.i(TAG, serviceStatus);
-			for (String credential : DUMMY_CREDENTIALS) {
-				String[] pieces = credential.split(":");
-				if (pieces[0].equals(mPasscode)) {
-					// Account exists, return true if the password matches.
-					return pieces[1].equals(mDevice);
-				}
-			}
-
-			// TODO: register the new account here.
-			return true;
+			return false;
 		}
 
 		@Override
@@ -379,8 +393,10 @@ public class LoginActivity extends Activity {
 			showProgress(false);
 
 			if (success) {
-				finish();
-			} else {
+				Log.d(TAG, "Saved Prefernces, intent VideoViewActivity.");
+				Intent intent = new Intent(mActivity, VideoViewActivity.class);
+				startActivityForResult(intent, 2);
+			} else{
 				mPasscodeView
 						.setError(getString(R.string.error_incorrect_password));
 				mPasscodeView.requestFocus();

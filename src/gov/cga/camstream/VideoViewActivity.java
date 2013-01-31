@@ -19,9 +19,13 @@ import android.content.Context;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.Toast;
 
 public class VideoViewActivity extends Activity  implements Callback
@@ -35,14 +39,15 @@ public class VideoViewActivity extends Activity  implements Callback
 	private String Text;
 	private final static String TAG = "VideoView";
 	
-	@SuppressWarnings("deprecation")
+	private Button mController;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) 
 	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_video_view);
         
-		Log.i(TAG, "onCreate.");
+		Log.i(TAG, "Camera View");
 		
 		String path = Environment.getExternalStorageDirectory().getAbsolutePath().toString()+"/testAndroid";
 		File file = new File(path);
@@ -52,27 +57,54 @@ public class VideoViewActivity extends Activity  implements Callback
         	Toast.makeText(this, "create", Toast.LENGTH_LONG).show();
         	file.mkdir();
         }
-		
+        
+        mController = (Button) findViewById(R.id.camera_controller);
+        
+        mController.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				String contextText = (String) mController.getText();
+				
+				if (contextText.equals("開始轉播")){
+					try {
+		                startRecording();
+		            } catch (Exception e) {
+		            	e.getStackTrace();
+		                String message = e.getMessage();
+		                Log.i(null, "Problem " + message);
+		                mrec.release();
+		            }
+				}
+			}
+        });
+        
 		surfaceView = (SurfaceView) findViewById(R.id.surface_camera);
         mCamera = Camera.open();
        
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
+        
+        // 開啟預覽畫面在開始轉播前
+        //Log.d(TAG, "Set Preview Done!");
         //surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 	}
 
+	// 自訂選單選項
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) 
 	{
 		// Inflate the menu; this adds items to the action bar if it is present.
 		Log.i(TAG, "Create Menu.");
 		getMenuInflater().inflate(R.menu.activity_video_view, menu);
-		menu.add(0, 0, 0, "Start");
+		/*menu.add(0, 0, 0, "Start");
 		menu.add(0, 1, 0, "Regist");
-		menu.add(0, 2, 0, "Connect");		
+		menu.add(0, 2, 0, "Connect");	*/	
         return super.onCreateOptionsMenu(menu);
 	}
 
+	// 選單事件處理
 	@Override
     public boolean onOptionsItemSelected(MenuItem item)
     {
@@ -174,8 +206,8 @@ public class VideoViewActivity extends Activity  implements Callback
 		}
 		return true;
 	}
-		
-
+	
+	//  開始錄影
 	
     protected void startRecording() throws IOException
     {
@@ -183,11 +215,11 @@ public class VideoViewActivity extends Activity  implements Callback
             mCamera = Camera.open();
        
         String filename;
-        String path= Environment.getExternalStorageDirectory().getAbsolutePath().toString()+"/testAndroid";
+        String path = Environment.getExternalStorageDirectory().getAbsolutePath().toString()+"/testAndroid";
       
         Toast.makeText(this, path, Toast.LENGTH_LONG).show();
-        Date date=new Date();
-        filename="/rsc"+date.toString().replace(" ", "_").replace(":", "_")+".mp4";
+        Date date = new Date();
+        filename = "/rsc" + date.toString().replace(" ", "_").replace(":", "_")+".mp4";
         
          //create empty file it must use
         File file = new File(path,filename);	
@@ -210,7 +242,6 @@ public class VideoViewActivity extends Activity  implements Callback
         mrec.setOutputFile(path+filename);
         mrec.prepare();
         mrec.start();
-
        
     }
 

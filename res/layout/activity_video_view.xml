@@ -21,4 +21,13 @@
         android:layout_weight="1" >
     </SurfaceView>
 
+    <Button
+        android:id="@+id/camera_controller"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/textView1"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="17dp"
+        android:text="@string/start_stream" />
+
 </RelativeLayout>
