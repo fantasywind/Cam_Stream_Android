@@ -96,7 +96,9 @@ public class LoginActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
+		
+		Log.d(TAG, "Start Login Page");
+		
 		// 取得 token 自偏好設定
 		Context mContext = this.getApplicationContext();
 		mPrefs = mContext.getSharedPreferences("auth", 0);
@@ -108,7 +110,7 @@ public class LoginActivity extends Activity {
 		Log.i(TAG, "Preference [token]: " + token);
 		if (!token.equals("")) {
 			Intent intent = new Intent(this, VideoViewActivity.class);
-			startActivityForResult(intent, 2);
+			startActivity(intent);
 		}
 		
 		setContentView(R.layout.activity_login);
@@ -395,7 +397,7 @@ public class LoginActivity extends Activity {
 			if (success) {
 				Log.d(TAG, "Saved Prefernces, intent VideoViewActivity.");
 				Intent intent = new Intent(mActivity, VideoViewActivity.class);
-				startActivityForResult(intent, 2);
+				startActivity(intent);
 			} else{
 				mPasscodeView
 						.setError(getString(R.string.error_incorrect_password));

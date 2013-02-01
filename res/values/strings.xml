@@ -5,4 +5,5 @@
     <string name="hello_world">Hello world!</string>
     <string name="menu_settings">Settings</string>
 	<string name="start_stream">開始轉播</string>
+	<string name="port_fetching">正在獲取轉播伺服器，請稍候再試！</string>
 </resources>
