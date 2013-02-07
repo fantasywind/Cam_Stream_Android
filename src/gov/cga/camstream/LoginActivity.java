@@ -11,6 +11,8 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -71,6 +73,7 @@ public class LoginActivity extends Activity {
 	 * Keep track of the login task to ensure we can cancel it if requested.
 	 */
 	private UserLoginTask mAuthTask = null;
+	private ServerCheckTask mServerCheck = null;
 	private final static String TAG = "Login";
 
 	private static final Void Void = null;
@@ -89,10 +92,14 @@ public class LoginActivity extends Activity {
 	private Button mSubmitBtn;
 	
 	private Activity mActivity;
+	private final static String HOST = "220.128.105.72";
+	
+	Handler mViewHandler;
 	
 	// Token File
 	SharedPreferences mPrefs;	
 	
+	@SuppressLint("HandlerLeak")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -106,6 +113,7 @@ public class LoginActivity extends Activity {
 		mActivity = this;
 		
 		String token = mPrefs.getString("token", "");
+		token = "";
 		
 		Log.i(TAG, "Preference [token]: " + token);
 		if (!token.equals("")) {
@@ -148,24 +156,55 @@ public class LoginActivity extends Activity {
 					if (mSubmitBtn.getText().equals("取得憑證")) {
 						attemptLogin();
 					} else {
-						auth_service();
+						// ServerCheckTask
+						mServerCheck = new ServerCheckTask();
+						mServerCheck.execute((Void) );
+						//auth_service();
 					}
 				}
 			}
 		);
-
-		// Check Auth Service
-		this.auth_service();
+		
+		/*mViewHandler = new Handler () {
+			public void handleMessage(Message msg) {
+				super.handleMessage(msg);
+				switch (msg.what) {
+				case 1:
+					// available
+					Log.v(TAG, "Service Available");
+					mPasscodeView.setVisibility(1);
+					mDeviceView.setVisibility(1);
+					mServiceCheckStatus.setText(R.string.server_available);
+					mSubmitBtn.setText(R.string.action_login);
+					break;
+				case 2:
+					//unavailable
+					Log.v(TAG, "Service Unavailable");
+					mServiceCheckStatus.setText(R.string.server_unavailable);
+					break;
+				}
+			}
+		};*/
+		mPasscodeView.setVisibility(1);
+		mDeviceView.setVisibility(1);
+		mServiceCheckStatus.setText(R.string.server_available);
+		mSubmitBtn.setText(R.string.action_login);
+		// ServerCheckTask
+		//mServerCheck = new ServerCheckTask();
+		//mServerCheck.execute((Void) );
+		//this.auth_service();
 	}
-	
+	/*
 	private boolean auth_service () {
 		Log.i("Login", "Do Login Event.");
+		Log.d(TAG, "Host: " + HOST);
 		
 		HttpClient httpClient = new DefaultHttpClient();
-		HttpGet httpGet = new HttpGet("http://10.0.2.2/auth/check");
+		HttpGet httpGet = new HttpGet("http://" + HOST + "/auth/check");
 		HttpResponse response;
 		Boolean serviceStatus = false;
 		
+		Log.d(TAG, "flags");
 		try {
 			response = httpClient.execute(httpGet);
 			
@@ -190,9 +229,10 @@ public class LoginActivity extends Activity {
 				Log.i(TAG, "Failed on connecting server.");
 			}
 		} catch (RuntimeException ex) {
-			Log.e("Connection", ex.getMessage());
+			Log.e(TAG, ex.toString());
+			Log.e(TAG, ex.getMessage());
 		} catch (IOException ex) {
-			Log.e("Connection", ex.getMessage());
+			Log.e(TAG, ex.getMessage());
 		} catch (JSONException ex) {
 			ex.printStackTrace();
 		}
@@ -207,7 +247,7 @@ public class LoginActivity extends Activity {
 		}
 		return serviceStatus;
 	}
-
+	 */
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
@@ -331,6 +371,90 @@ public class LoginActivity extends Activity {
 		return streamBuilder.toString();
 	}
 	
+	public void server_available() {
+		mPasscodeView.setVisibility(1);
+		mDeviceView.setVisibility(1);
+		mServiceCheckStatus.setText(R.string.server_available);
+		mSubmitBtn.setText(R.string.action_login);
+	}
+	
+	public void server_unavailable() {
+		mServiceCheckStatus.setText(R.string.server_unavailable);
+	}
+	/**
+	 * Check Server Status
+	 * Represents an asynchronous login/registration task used to authenticate
+	 * the user.
+	 */
+	public class ServerCheckTask extends AsyncTask<Void, Void, Boolean> {
+		@Override
+		protected Boolean doInBackground(Void... param) {
+			Log.i("Login", "Do Server Check Event.");
+						
+			HttpClient httpClient = new DefaultHttpClient();
+			HttpGet httpGet = new HttpGet("http://" + HOST + "/auth/check");
+			HttpResponse response;
+						
+			try {
+				response = httpClient.execute(httpGet);
+				
+				HttpEntity entity = response.getEntity();
+				String contentType = response.getHeaders("Content-Type")[0].getValue().toString();
+				String typePattern = "application/json.*";
+				
+				if (entity != null && contentType.matches(typePattern)) {
+					
+					InputStream inStream = entity.getContent();
+					String result = convert_stream_to_string(inStream);
+					
+					//Log.i(TAG, "ReSuLt: " + result);
+									
+					JSONObject json = new JSONObject(result);
+									
+					if (json.getString("status").equals("unavailable")){
+						Log.d(TAG, "unavailable");
+					} else {
+						Log.d(TAG, "available");
+					}
+					inStream.close();
+					
+				} else {
+					Log.i(TAG, "Failed on connecting server.");
+				}
+			} catch (RuntimeException ex) {
+				Log.e("Connection1", ex.getMessage());
+			} catch (IOException ex) {
+				Log.e("Connection2", ex.getMessage());
+			} catch (JSONException ex) {
+				ex.printStackTrace();
+				Log.e("Connection3", ex.getMessage());
+			}
+			return false;
+		}
+
+		@Override
+		protected void onPostExecute(final Boolean success) {
+			mAuthTask = null;
+			showProgress(false);
+
+			/*if (success) {
+				Log.d(TAG, "Saved Prefernces, intent VideoViewActivity.");
+				Intent intent = new Intent(mActivity, VideoViewActivity.class);
+				startActivity(intent);
+			} else{
+				mPasscodeView
+						.setError(getString(R.string.error_incorrect_password));
+				mPasscodeView.requestFocus();
+			}*/
+		}
+
+		@Override
+		protected void onCancelled() {
+			mAuthTask = null;
+			showProgress(false);
+		}
+	}
+	
 	/**
 	 * 登入系統取得認證碼
 	 * Represents an asynchronous login/registration task used to authenticate
@@ -342,7 +466,7 @@ public class LoginActivity extends Activity {
 			Log.i("Login", "Do Login Event.");
 						
 			HttpClient httpClient = new DefaultHttpClient();
-			HttpPost httpPost = new HttpPost("http://10.0.2.2/auth/" + mPasscode + "/" + mDevice);
+			HttpPost httpPost = new HttpPost("http://" + HOST + "/auth/" + mPasscode + "/" + mDevice);
 			HttpResponse response;
 						
 			try {
